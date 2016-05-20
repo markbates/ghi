@@ -55,7 +55,6 @@ to quickly create a Cobra application.`,
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf(`=== comments -> %s\n`, comments)
 			issue := &allIssues[i]
 			issue.Comments = comments
 		})
