@@ -9,6 +9,7 @@ import (
 
 type Issue struct {
 	github.Issue
+	Comments []github.IssueComment
 }
 
 func (i Issue) FmtTitle() string {

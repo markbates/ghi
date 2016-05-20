@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/markbates/ghi/cmd/issue"
+	"github.com/markbates/going/wait"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -41,13 +42,23 @@ to quickly create a Cobra application.`,
 			}
 			for _, i := range issues {
 				//TODO: fetch comments for the issues
-				allIssues = append(allIssues, issue.Issue{i})
+				allIssues = append(allIssues, issue.Issue{Issue: i, Comments: []github.IssueComment{}})
 			}
 			if resp.NextPage == 0 {
 				break
 			}
 			opts.Page = resp.NextPage
 		}
+
+		wait.Wait(len(allIssues), func(i int) {
+			comments, _, err := client.Issues.ListComments(db.Owner, db.Repo, 0, &github.IssueListCommentsOptions{})
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf(`=== comments -> %s\n`, comments)
+			issue := &allIssues[i]
+			issue.Comments = comments
+		})
 
 		err := db.Persist(allIssues)
 		if err != nil {
