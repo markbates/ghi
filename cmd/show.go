@@ -37,6 +37,9 @@ to quickly create a Cobra application.`,
 		} else {
 			fmt.Print(issue.FmtTitle())
 			fmt.Print(issue.FmtByLine())
+			if len(issue.Labels) > 0 {
+				fmt.Printf("\tLabels: %s\n", issue.Labels)
+			}
 			if issue.Body != nil {
 				fmt.Printf("\n%s\n", *issue.Body)
 			}

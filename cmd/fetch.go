@@ -40,6 +40,7 @@ to quickly create a Cobra application.`,
 				log.Fatal(err)
 			}
 			for _, i := range issues {
+				//TODO: fetch comments for the issues
 				allIssues = append(allIssues, issue.Issue{i})
 			}
 			if resp.NextPage == 0 {
