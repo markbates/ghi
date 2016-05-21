@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/markbates/ghi/cmd/store"
@@ -12,24 +11,22 @@ import (
 var db *store.Store
 var config *Config
 
-// RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "ghi",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	Short: "Offline GitHub Issues Client",
+	Long:  `GHI let's you download issues from a GitHub repo to be made available offline.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		config = LoadConfig()
 		if config.Repo == "" {
 			if len(args) == 0 {
-				log.Fatal("You must pass in an owner/repo to the this function!")
+				fmt.Println(`It looks like you haven't initialized GHI yet!
+
+The first time you run GHI you should run "ghi fetch owner/repo".
+
+This will fetch all of your issues for that repository. Future calls
+to "fetch" won't require the "owner/repo" since we'll store a little
+meta-data file in this repo to track that.`)
+				os.Exit(-1)
 			} else {
 				config.SetFromArgs(args)
 			}
@@ -37,7 +34,8 @@ to quickly create a Cobra application.`,
 
 		s, err := store.New(config.Owner, config.Repo)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
+			os.Exit(-1)
 		}
 		db = s
 	},
