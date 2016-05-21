@@ -3,7 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"os"
 
 	"github.com/markbates/ghi/cmd/issue"
 	"github.com/spf13/cobra"
@@ -14,13 +14,7 @@ var state string
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Lists issues for the repo.",
 	Run: func(cmd *cobra.Command, args []string) {
 		var issues []issue.Issue
 		var err error
@@ -32,18 +26,21 @@ to quickly create a Cobra application.`,
 		}
 
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
+			os.Exit(-1)
 		}
 		if raw {
 			b, err := json.MarshalIndent(issues, "", "  ")
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
+				os.Exit(-1)
 			}
 			fmt.Print(string(b))
 		} else {
 			for _, issue := range issues {
 				fmt.Print(issue.FmtTitle())
 			}
+			fmt.Printf("\n=== (%d) Issues ===\n", len(issues))
 		}
 	},
 }

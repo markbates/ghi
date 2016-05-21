@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -15,25 +16,21 @@ var showComments bool
 // showCmd represents the show command
 var showCmd = &cobra.Command{
 	Use:   "show <number>",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Show the details for a specific issue.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			log.Fatal("You need to ask for one issue by number!")
 		}
 		issue, err := db.Get(args[0])
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
+			os.Exit(-1)
 		}
 		if raw {
 			b, err := json.MarshalIndent(issue, "", "  ")
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
+				os.Exit(-1)
 			}
 			fmt.Print(string(b))
 		} else {
@@ -60,6 +57,6 @@ to quickly create a Cobra application.`,
 
 func init() {
 	RootCmd.AddCommand(showCmd)
-	showCmd.Flags().BoolVarP(&raw, "raw", "r", false, "Show the raw JSON for this issue")
-	showCmd.Flags().BoolVarP(&showComments, "comments", "c", false, "Show the comments for this issue")
+	showCmd.Flags().BoolVarP(&raw, "raw", "r", false, "Show the raw JSON for this issue.")
+	showCmd.Flags().BoolVarP(&showComments, "comments", "c", false, "Append the comments to this issue.")
 }

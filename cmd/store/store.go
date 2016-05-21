@@ -100,6 +100,11 @@ func (s *Store) AllByState(state string) ([]issue.Issue, error) {
 	s.DB.View(func(tx *bolt.Tx) error {
 		pb := tx.Bucket(s.BucketName())
 		b := pb.Bucket([]byte(state))
+		if b == nil {
+			// the bucket doesn't exist, possibly because there are no
+			// issues with this state. exit and move on.
+			return nil
+		}
 		return b.ForEach(func(k, v []byte) error {
 			i := issue.Issue{}
 			err := json.Unmarshal(v, &i)

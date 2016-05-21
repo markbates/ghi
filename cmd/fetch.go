@@ -17,13 +17,20 @@ import (
 // fetchCmd represents the fetch command
 var fetchCmd = &cobra.Command{
 	Use:   "fetch",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Fetches all of the issues for the specified repo.",
+	Long: `Fetches all of the issues for the specified repo.
+This will clear any existing issues stored locally, pull down
+everything from GitHub and store it locally for offline use.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+The first time you run this command you should run it like such:
+
+$ ghi fetch owner/repo
+
+Subsequent calls will not need the "owner/repo".
+
+If you are going to be calling a private repo you will need to
+set the ENV var "GITHUB_TOKEN" with a GitHub Personal Access Token.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
 			config.SetFromArgs(args)
@@ -36,7 +43,7 @@ to quickly create a Cobra application.`,
 
 		more := true
 		count := 0
-		opts := &github.IssueListByRepoOptions{State: "all"}
+		opts := &github.IssueListByRepoOptions{State: state}
 
 		spin := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
 		spin.Suffix = " Fetching (This could take a while depending on the number of issues and comments you have!)"
@@ -91,4 +98,5 @@ func newClient() *github.Client {
 
 func init() {
 	RootCmd.AddCommand(fetchCmd)
+	fetchCmd.Flags().StringVarP(&state, "state", "s", "all", "Fetch issues by their state <all, closed, open>")
 }
