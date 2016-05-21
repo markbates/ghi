@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
 
 	"github.com/google/go-github/github"
 	"github.com/markbates/ghi/cmd/issue"
@@ -27,21 +26,28 @@ to quickly create a Cobra application.`,
 		if len(args) > 0 {
 			config.SetFromArgs(args)
 		}
+
 		ts := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
 		)
 		tc := oauth2.NewClient(oauth2.NoContext, ts)
 
 		client := github.NewClient(tc)
-		opts := &github.IssueListByRepoOptions{State: "all"}
-		allIssues := []issue.Issue{}
+
+		err := db.Clear()
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		more := true
-		locker := &sync.Mutex{}
+		count := 0
+		opts := &github.IssueListByRepoOptions{State: "all"}
 		for more {
 			issues, resp, err := client.Issues.ListByRepo(db.Owner, db.Repo, opts)
 			if err != nil {
 				log.Fatal(err)
 			}
+			count += len(issues)
 
 			wait.Wait(len(issues), func(i int) {
 				issue := &issue.Issue{Issue: issues[i], Comments: []github.IssueComment{}}
@@ -50,9 +56,7 @@ to quickly create a Cobra application.`,
 					log.Fatal(err)
 				}
 				issue.Comments = comments
-				locker.Lock()
-				allIssues = append(allIssues, *issue)
-				locker.Unlock()
+				db.Save(*issue)
 			})
 			if resp.NextPage == 0 {
 				break
@@ -60,12 +64,11 @@ to quickly create a Cobra application.`,
 			opts.Page = resp.NextPage
 		}
 
-		err := db.Persist(allIssues)
 		if err != nil {
 			log.Fatal(err)
 		}
 		config.Save()
-		fmt.Printf("Fetched %d issues for %s/%s\n", len(allIssues), db.Owner, db.Repo)
+		fmt.Printf("Fetched %d issues for %s/%s\n", count, db.Owner, db.Repo)
 	},
 }
 

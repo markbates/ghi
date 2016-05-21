@@ -45,7 +45,7 @@ to quickly create a Cobra application.`,
 			if issue.Body != nil {
 				fmt.Printf("\n%s\n", *issue.Body)
 			}
-			if showComments {
+			if showComments && len(issue.Comments) > 0 {
 				fmt.Println("\n=== Comments ===")
 				for _, c := range issue.Comments {
 					if c.Body != nil {

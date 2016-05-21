@@ -17,5 +17,5 @@ func (i Issue) FmtTitle() string {
 }
 
 func (i Issue) FmtByLine() string {
-	return fmt.Sprintf("\tCreated %s by %s\n", i.CreatedAt.In(time.Local), *i.User.Login)
+	return fmt.Sprintf("\tCreated %s by %s\n\tState: %s\n", i.CreatedAt.In(time.Local), *i.User.Login, *i.State)
 }

@@ -35,29 +35,40 @@ func New(owner, repo string) (*Store, error) {
 	return s, err
 }
 
-func (s *Store) Persist(issues []issue.Issue) error {
-	// clear the bucket:
-	s.DB.Update(func(tx *bolt.Tx) error {
+func (s *Store) Clear() error {
+	return s.DB.Update(func(tx *bolt.Tx) error {
 		tx.DeleteBucket(s.BucketName())
-		b, _ := tx.CreateBucketIfNotExists(s.BucketName())
-		for _, issue := range issues {
-			data, err := json.Marshal(issue)
-			if err != nil {
-				return err
-			}
-			b.Put([]byte(strconv.Itoa(*issue.Number)), data)
-		}
-		return nil
+		_, err := tx.CreateBucketIfNotExists(s.BucketName())
+		return err
 	})
+}
 
-	return nil
+func (s *Store) Save(is issue.Issue) error {
+	return s.DB.Update(func(tx *bolt.Tx) error {
+		pb, _ := tx.CreateBucketIfNotExists(s.BucketName())
+		b, _ := pb.CreateBucketIfNotExists([]byte(*is.State))
+		data, err := json.Marshal(is)
+		if err != nil {
+			return err
+		}
+		err = b.Put([]byte(strconv.Itoa(*is.Number)), data)
+		if err != nil {
+			return err
+		}
+		inb, _ := pb.CreateBucketIfNotExists([]byte("_map"))
+		return inb.Put([]byte(strconv.Itoa(*is.Number)), []byte(*is.State))
+	})
 }
 
 func (s *Store) Get(number string) (issue.Issue, error) {
+	id := []byte(number)
 	i := issue.Issue{}
 	err := s.DB.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(s.BucketName())
-		v := b.Get([]byte(number))
+		pb := tx.Bucket(s.BucketName())
+		inb := pb.Bucket([]byte("_map"))
+		bn := inb.Get(id)
+		b := pb.Bucket(bn)
+		v := b.Get(id)
 		if v == nil {
 			return fmt.Errorf("Issue #%s was not found!", number)
 		}
@@ -70,8 +81,25 @@ func (s *Store) Get(number string) (issue.Issue, error) {
 func (s *Store) All() ([]issue.Issue, error) {
 	issues := []issue.Issue{}
 
+	err := s.DB.View(func(tx *bolt.Tx) error {
+		for _, state := range []string{"open", "closed"} {
+			si, err := s.AllByState(state)
+			if err != nil {
+				return err
+			}
+			issues = append(issues, si...)
+		}
+		return nil
+	})
+	return issues, err
+}
+
+func (s *Store) AllByState(state string) ([]issue.Issue, error) {
+	issues := []issue.Issue{}
+
 	s.DB.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(s.BucketName())
+		pb := tx.Bucket(s.BucketName())
+		b := pb.Bucket([]byte(state))
 		return b.ForEach(func(k, v []byte) error {
 			i := issue.Issue{}
 			err := json.Unmarshal(v, &i)

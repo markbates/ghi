@@ -23,16 +23,12 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var issues []issue.Issue
-		all, err := db.All()
+		var err error
 		switch state {
 		case "all":
-			issues = all
+			issues, err = db.All()
 		default:
-			for _, i := range all {
-				if *i.State == state {
-					issues = append(issues, i)
-				}
-			}
+			issues, err = db.AllByState(state)
 		}
 
 		if err != nil {
