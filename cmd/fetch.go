@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/google/go-github/github"
 	"github.com/markbates/ghi/cmd/issue"
@@ -32,32 +33,32 @@ to quickly create a Cobra application.`,
 		tc := oauth2.NewClient(oauth2.NoContext, ts)
 
 		client := github.NewClient(tc)
-		opts := &github.IssueListByRepoOptions{}
+		opts := &github.IssueListByRepoOptions{State: "all"}
 		allIssues := []issue.Issue{}
 		more := true
+		locker := &sync.Mutex{}
 		for more {
 			issues, resp, err := client.Issues.ListByRepo(db.Owner, db.Repo, opts)
 			if err != nil {
 				log.Fatal(err)
 			}
-			for _, i := range issues {
-				//TODO: fetch comments for the issues
-				allIssues = append(allIssues, issue.Issue{Issue: i, Comments: []github.IssueComment{}})
-			}
+
+			wait.Wait(len(issues), func(i int) {
+				issue := &issue.Issue{Issue: issues[i], Comments: []github.IssueComment{}}
+				comments, _, err := client.Issues.ListComments(db.Owner, db.Repo, *issue.Number, &github.IssueListCommentsOptions{})
+				if err != nil {
+					log.Fatal(err)
+				}
+				issue.Comments = comments
+				locker.Lock()
+				allIssues = append(allIssues, *issue)
+				locker.Unlock()
+			})
 			if resp.NextPage == 0 {
 				break
 			}
 			opts.Page = resp.NextPage
 		}
-
-		wait.Wait(len(allIssues), func(i int) {
-			issue := &allIssues[i]
-			comments, _, err := client.Issues.ListComments(db.Owner, db.Repo, *issue.Number, &github.IssueListCommentsOptions{})
-			if err != nil {
-				log.Fatal(err)
-			}
-			issue.Comments = comments
-		})
 
 		err := db.Persist(allIssues)
 		if err != nil {

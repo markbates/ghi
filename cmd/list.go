@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/markbates/ghi/cmd/issue"
 	"github.com/spf13/cobra"
 )
+
+var state string
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
@@ -19,7 +22,19 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		issues, err := db.All()
+		var issues []issue.Issue
+		all, err := db.All()
+		switch state {
+		case "all":
+			issues = all
+		default:
+			for _, i := range all {
+				if *i.State == state {
+					issues = append(issues, i)
+				}
+			}
+		}
+
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -40,4 +55,5 @@ to quickly create a Cobra application.`,
 func init() {
 	RootCmd.AddCommand(listCmd)
 	listCmd.Flags().BoolVarP(&raw, "raw", "r", false, "Show the raw JSON for these issues")
+	listCmd.Flags().StringVarP(&state, "state", "s", "open", "List issues by their state <all, closed, open>")
 }
