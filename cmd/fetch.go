@@ -14,6 +14,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var fetchState string
+
 // fetchCmd represents the fetch command
 var fetchCmd = &cobra.Command{
 	Use:   "fetch",
@@ -43,10 +45,10 @@ set the ENV var "GITHUB_TOKEN" with a GitHub Personal Access Token.
 
 		more := true
 		count := 0
-		opts := &github.IssueListByRepoOptions{State: state}
+		opts := &github.IssueListByRepoOptions{State: fetchState}
 
 		spin := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
-		spin.Suffix = " Fetching (This could take a while depending on the number of issues and comments you have!)"
+		spin.Suffix = fmt.Sprintf(" Fetching %s Issues (This could take a while depending on the number of issues and comments you have!)", fetchState)
 		spin.Start()
 
 		client := newClient()
@@ -98,5 +100,5 @@ func newClient() *github.Client {
 
 func init() {
 	RootCmd.AddCommand(fetchCmd)
-	fetchCmd.Flags().StringVarP(&state, "state", "s", "all", "Fetch issues by their state <all, closed, open>")
+	fetchCmd.Flags().StringVarP(&fetchState, "state", "s", "all", "Fetch issues by their state <all, closed, open>")
 }

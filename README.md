@@ -38,4 +38,4 @@ $ ghi help fetch
 
 ## One Last Thing!
 
-I probably should've mentioned this earlier, but this client is purely *READONLY*. Don't expect to be able to update, create, delete, wave at, give gifts to, or in any other way interactive with issues.
+I probably should've mentioned this earlier, but this client is purely _**READONLY**_. Don't expect to be able to update, create, delete, wave at, give gifts to, or in any other way interactive with issues.

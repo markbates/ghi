@@ -13,7 +13,7 @@ var config *Config
 
 var RootCmd = &cobra.Command{
 	Use:   "ghi",
-	Short: "Offline GitHub Issues Client",
+	Short: fmt.Sprintf("Offline GitHub Issues Client (v%s)", Version),
 	Long:  `GHI let's you download issues from a GitHub repo to be made available offline.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		config = LoadConfig()
