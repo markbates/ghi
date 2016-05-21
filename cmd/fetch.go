@@ -51,11 +51,11 @@ to quickly create a Cobra application.`,
 		}
 
 		wait.Wait(len(allIssues), func(i int) {
-			comments, _, err := client.Issues.ListComments(db.Owner, db.Repo, 0, &github.IssueListCommentsOptions{})
+			issue := &allIssues[i]
+			comments, _, err := client.Issues.ListComments(db.Owner, db.Repo, *issue.Number, &github.IssueListCommentsOptions{})
 			if err != nil {
 				log.Fatal(err)
 			}
-			issue := &allIssues[i]
 			issue.Comments = comments
 		})
 
