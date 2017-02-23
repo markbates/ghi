@@ -5,13 +5,15 @@ import (
 	"log"
 	"os"
 	"time"
+	"context"
+	"net/http"
 
+	"golang.org/x/oauth2"
 	"github.com/briandowns/spinner"
 	"github.com/google/go-github/github"
 	"github.com/markbates/ghi/cmd/issue"
 	"github.com/markbates/going/wait"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2"
 )
 
 var fetchState string
@@ -53,9 +55,9 @@ set the ENV var "GITHUB_TOKEN" with a GitHub Personal Access Token.
 
 		client := newClient()
 		for more {
-			issues, resp, err := client.Issues.ListByRepo(db.Owner, db.Repo, opts)
+			issues, resp, err := client.Issues.ListByRepo(context.Background(), db.Owner, db.Repo, opts)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("\n%s", err.Error())
 				if resp != nil && resp.StatusCode == 401 {
 					fmt.Println(`Couldn't access this repo! Try setting a GitHub Personal Token.
 
@@ -66,8 +68,8 @@ This token can be set as an environment variable "GITHUB_TOKEN".`)
 			count += len(issues)
 
 			wait.Wait(len(issues), func(i int) {
-				issue := &issue.Issue{Issue: issues[i], Comments: []github.IssueComment{}}
-				comments, _, err := client.Issues.ListComments(db.Owner, db.Repo, *issue.Number, &github.IssueListCommentsOptions{})
+				issue := &issue.Issue{Issue: *issues[i], Comments: []*github.IssueComment{}}
+				comments, _, err := client.Issues.ListComments(context.Background(), db.Owner, db.Repo, *issue.Number, &github.IssueListCommentsOptions{})
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -90,12 +92,15 @@ This token can be set as an environment variable "GITHUB_TOKEN".`)
 }
 
 func newClient() *github.Client {
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-	)
-	tc := oauth2.NewClient(oauth2.NoContext, ts)
-
-	return github.NewClient(tc)
+	token := os.Getenv("GITHUB_TOKEN")
+	if len(token) > 0 {
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+		)
+		tc := oauth2.NewClient(oauth2.NoContext, ts)
+		return github.NewClient(tc)
+	}
+	return github.NewClient(&http.Client{})
 }
 
 func init() {
